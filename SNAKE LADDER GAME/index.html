@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cosmic Chutes & Serpents - A premium, interactive 3D Snakes and Ladders board game featuring dynamic SVG serpents, 3D rolling dice, AI opponents, and rich sound effects.">
+  <title>Cosmic Chutes & Serpents | Ultimate Snakes & Ladders</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%220%22%20100%20100%22><text y=%22.9em%22 font-size=%2290%22>🐍</text></svg>">
+</head>
+<body>
+
+  <!-- Fullscreen Particle / Confetti Canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <div class="brand-icon">🎲</div>
+      <div>
+        <h1 class="brand-title">Cosmic Chutes & Serpents</h1>
+        <div class="brand-subtitle">Snakes &amp; Ladders Deluxe</div>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <button id="sound-btn" class="icon-btn" aria-label="Toggle Sound" title="Toggle Sound">
+        <span id="sound-icon">🔊</span>
+        <span class="btn-text">Sound</span>
+      </button>
+      <button id="rules-btn" class="icon-btn" aria-label="How to Play" title="How to Play">
+        <span>📖</span>
+        <span class="btn-text">Rules</span>
+      </button>
+      <button id="setup-btn" class="icon-btn" aria-label="Game Setup" title="Game Setup">
+        <span>⚙️</span>
+        <span class="btn-text">Players</span>
+      </button>
+      <button id="restart-btn" class="icon-btn" aria-label="Restart Game" title="Restart Game">
+        <span>🔄</span>
+        <span class="btn-text">Restart</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Game Layout -->
+  <main class="game-main">
+
+    <!-- Left: 10x10 Board Section -->
+    <div class="board-wrapper">
+      <div class="board-container" id="board-container">
+        <!-- 10x10 Grid Tiles -->
+        <div id="game-board" role="grid" aria-label="Snakes and Ladders Game Board"></div>
+
+        <!-- Dynamic SVG Overlays (Snakes & Ladders) -->
+        <svg id="board-svg" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"></svg>
+
+        <!-- Dynamic Pawns Layer -->
+        <div id="pawns-layer" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <!-- Right: Control Hub -->
+    <aside class="control-hub" aria-label="Game Controls">
+
+      <!-- Current Turn Card -->
+      <section class="glass-panel turn-card" aria-live="polite">
+        <div class="turn-display" id="current-player-display">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- 3D Dice Roller Arena -->
+      <section class="glass-panel dice-arena">
+        <div class="dice-viewport" id="dice-container" title="Click or Press Spacebar to Roll">
+          <div class="dice-cube" id="dice-cube">
+            <!-- Face 1 -->
+            <div class="dice-face face-1">
+              <span class="pip"></span>
+            </div>
+            <!-- Face 2 -->
+            <div class="dice-face face-2">
+              <span class="pip"></span>
+              <span class="pip"></span>
+            </div>
+            <!-- Face 3 -->
+            <div class="dice-face face-3">
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+            </div>
+            <!-- Face 4 -->
+            <div class="dice-face face-4">
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+            </div>
+            <!-- Face 5 -->
+            <div class="dice-face face-5">
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+            </div>
+            <!-- Face 6 -->
+            <div class="dice-face face-6">
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+              <span class="pip"></span>
+            </div>
+          </div>
+        </div>
+
+        <button id="roll-btn" class="roll-cta-btn">
+          <span class="btn-icon">🎲</span>
+          <span class="btn-text">Roll Dice</span>
+          <span class="btn-kbd">Space</span>
+        </button>
+      </section>
+
+      <!-- Leaderboard / Progress -->
+      <section class="glass-panel scoreboard-panel">
+        <div class="panel-header">
+          <div class="panel-title"><span>🏆</span> Standings</div>
+        </div>
+        <div class="score-list" id="scoreboard-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Game Event Log -->
+      <section class="glass-panel log-panel">
+        <div class="panel-header">
+          <div class="panel-title"><span>📜</span> Live Feed</div>
+        </div>
+        <div class="log-container">
+          <ul class="log-list" id="game-log-list" role="log" aria-live="polite"></ul>
+        </div>
+      </section>
+
+    </aside>
+
+  </main>
+
+  <!-- =======================================================================
+       Modal: Player Configuration
+       ======================================================================= -->
+  <dialog id="setup-dialog" aria-labelledby="setup-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="setup-modal-title" class="modal-title">Game Setup</h2>
+        <button class="close-btn" id="close-setup-btn" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="setup-form">
+        <div class="form-group">
+          <label class="form-label">Total Players</label>
+          <div class="player-count-buttons">
+            <button type="button" class="count-btn" data-count="1">1 vs Bot</button>
+            <button type="button" class="count-btn active" data-count="2">2 Players</button>
+            <button type="button" class="count-btn" data-count="3">3 Players</button>
+            <button type="button" class="count-btn" data-count="4">4 Players</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Customize Players</label>
+          <div class="player-config-rows" id="player-rows-container">
+            <!-- Dynamically generated rows -->
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Game Speed</label>
+          <div class="player-count-buttons">
+            <button type="button" class="count-btn speed-btn" data-speed="350">Normal</button>
+            <button type="button" class="count-btn speed-btn active" data-speed="220">Fast</button>
+            <button type="button" class="count-btn speed-btn" data-speed="90">Turbo</button>
+          </div>
+        </div>
+
+        <button type="button" id="start-new-game-btn" class="primary-btn">Start Game 🚀</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- =======================================================================
+       Modal: Rules & How to Play
+       ======================================================================= -->
+  <dialog id="rules-dialog" aria-labelledby="rules-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="rules-modal-title" class="modal-title">How To Play</h2>
+        <button class="close-btn" id="close-rules-btn" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="rules-content">
+        <div class="rules-row">
+          <span class="rules-icon">🎲</span>
+          <div>
+            <strong>Rolling &amp; Moving:</strong> Roll the 3D dice by clicking the button or pressing <strong>Spacebar</strong>. Your pawn advances tile by tile.
+          </div>
+        </div>
+
+        <div class="rules-row">
+          <span class="rules-icon">🪜</span>
+          <div>
+            <strong>Ladders:</strong> Landing on the base of a golden ladder instantly shoots your pawn up to the higher destination!
+          </div>
+        </div>
+
+        <div class="rules-row">
+          <span class="rules-icon">🐍</span>
+          <div>
+            <strong>Snakes:</strong> Stepping on a serpent's head bites and slides your pawn down to its tail!
+          </div>
+        </div>
+
+        <div class="rules-row">
+          <span class="rules-icon">⚡</span>
+          <div>
+            <strong>Power-Up Tiles:</strong>
+            <ul style="margin-top: 6px; padding-left: 18px;">
+              <li><strong>🛡️ Snake Shield (44):</strong> Absorbs and immunizes against your next snake bite!</li>
+              <li><strong>⚡ Speed Boost (15):</strong> Instantly propels you +3 tiles forward!</li>
+              <li><strong>🌀 Cosmic Warp (82):</strong> Warps you +4 tiles forward!</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="rules-row">
+          <span class="rules-icon">🎯</span>
+          <div>
+            <strong>Lucky Six &amp; Victory:</strong> Rolling a <strong>6</strong> grants an immediate extra roll! Reach <strong>Tile 100</strong> to be crowned Champion. Over-rolling bounces back from 100!
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="primary-btn" id="got-it-rules-btn">Got It! Let's Play</button>
+    </div>
+  </dialog>
+
+  <!-- =======================================================================
+       Modal: Victory Celebration
+       ======================================================================= -->
+  <dialog id="victory-dialog" aria-labelledby="win-modal-title">
+    <div class="modal-card victory-card">
+      <div class="win-crown">👑</div>
+      <h2 id="win-modal-title" class="win-title">VICTORY!</h2>
+      <div class="winner-hero">
+        <span class="win-avatar" id="win-player-avatar">🚀</span>
+        <span class="win-name" id="win-player-name">Player 1</span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 1rem;">Has conquered the Cosmic Serpents and reached Tile 100!</p>
+
+      <div class="win-stats" id="win-stats-content">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <button type="button" id="play-again-btn" class="primary-btn" style="width: 100%;">Play Again 🔄</button>
+    </div>
+  </dialog>
+
+  <!-- Scripts -->
+  <script src="audio.js"></script>
+  <script src="board.js"></script>
+  <script src="game.js"></script>
+  <script>
+    // Initialize Game on DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const game = new GameEngine();
+
+      // Audio Toggle
+      const soundBtn = document.getElementById('sound-btn');
+      const soundIcon = document.getElementById('sound-icon');
+      soundBtn.addEventListener('click', () => {
+        const isMuted = window.soundEngine.toggleMute();
+        soundIcon.textContent = isMuted ? '🔇' : '🔊';
+        window.soundEngine.playClick();
+      });
+
+      // Rules Dialog
+      const rulesBtn = document.getElementById('rules-btn');
+      const rulesDialog = document.getElementById('rules-dialog');
+      const closeRulesBtn = document.getElementById('close-rules-btn');
+      const gotItRulesBtn = document.getElementById('got-it-rules-btn');
+
+      rulesBtn.addEventListener('click', () => {
+        window.soundEngine.playClick();
+        rulesDialog.showModal();
+      });
+      closeRulesBtn.addEventListener('click', () => rulesDialog.close());
+      gotItRulesBtn.addEventListener('click', () => rulesDialog.close());
+
+      // Restart Button
+      const restartBtn = document.getElementById('restart-btn');
+      restartBtn.addEventListener('click', () => {
+        if (confirm('Restart current game?')) {
+          game.resetGame();
+        }
+      });
+
+      // Victory Play Again Button
+      const victoryDialog = document.getElementById('victory-dialog');
+      const playAgainBtn = document.getElementById('play-again-btn');
+      playAgainBtn.addEventListener('click', () => {
+        victoryDialog.close();
+        game.resetGame();
+      });
+
+      // Setup Dialog
+      const setupBtn = document.getElementById('setup-btn');
+      const setupDialog = document.getElementById('setup-dialog');
+      const closeSetupBtn = document.getElementById('close-setup-btn');
+      const countButtons = document.querySelectorAll('.player-count-buttons .count-btn:not(.speed-btn)');
+      const speedButtons = document.querySelectorAll('.speed-btn');
+      const playerRowsContainer = document.getElementById('player-rows-container');
+      const startNewGameBtn = document.getElementById('start-new-game-btn');
+
+      const AVATARS = ['🚀', '🤖', '🐉', '🦄', '⚡', '🦊', '👑', '🛸'];
+      const PRESET_COLORS = [
+        { main: '#00ffcc', sec: '#0070f3' },
+        { main: '#ff007f', sec: '#7928ca' },
+        { main: '#ffd200', sec: '#ff8800' },
+        { main: '#00f260', sec: '#0575e6' }
+      ];
+
+      let selectedCount = 2;
+      let is1v1Bot = false;
+
+      function renderSetupRows(count, botMode = false) {
+        playerRowsContainer.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+          const row = document.createElement('div');
+          row.className = 'p-config-row';
+
+          const isAI = botMode && i === 1;
+          const defaultName = isAI ? 'Cosmo Bot' : `Player ${i + 1}`;
+          const defaultAvatar = isAI ? '🤖' : AVATARS[i % AVATARS.length];
+
+          row.innerHTML = `
+            <select class="p-avatar-select" data-player="${i}">
+              ${AVATARS.map(av => `<option value="${av}" ${av === defaultAvatar ? 'selected' : ''}>${av}</option>`).join('')}
+            </select>
+            <input type="text" class="p-name-input" data-player="${i}" value="${defaultName}" maxlength="15" placeholder="Player Name">
+            <label class="p-bot-toggle">
+              <input type="checkbox" class="p-is-bot" data-player="${i}" ${isAI ? 'checked' : ''}> Bot
+            </label>
+          `;
+          playerRowsContainer.appendChild(row);
+        }
+      }
+
+      countButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          countButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          window.soundEngine.playClick();
+
+          const countVal = btn.dataset.count;
+          if (countVal === '1') {
+            selectedCount = 2;
+            is1v1Bot = true;
+          } else {
+            selectedCount = parseInt(countVal, 10);
+            is1v1Bot = false;
+          }
+          renderSetupRows(selectedCount, is1v1Bot);
+        });
+      });
+
+      speedButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          speedButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          window.soundEngine.playClick();
+          game.stepDelay = parseInt(btn.dataset.speed, 10);
+        });
+      });
+
+      setupBtn.addEventListener('click', () => {
+        window.soundEngine.playClick();
+        renderSetupRows(selectedCount, is1v1Bot);
+        setupDialog.showModal();
+      });
+
+      closeSetupBtn.addEventListener('click', () => setupDialog.close());
+
+      startNewGameBtn.addEventListener('click', () => {
+        const rows = playerRowsContainer.querySelectorAll('.p-config-row');
+        const newPlayersConfig = [];
+
+        rows.forEach((row, idx) => {
+          const avatar = row.querySelector('.p-avatar-select').value;
+          const name = row.querySelector('.p-name-input').value.trim() || `Player ${idx + 1}`;
+          const isAI = row.querySelector('.p-is-bot').checked;
+          const colorPair = PRESET_COLORS[idx % PRESET_COLORS.length];
+
+          newPlayersConfig.push({
+            name,
+            avatar,
+            isAI,
+            color: colorPair.main,
+            secondary: colorPair.sec
+          });
+        });
+
+        game.configurePlayers(newPlayersConfig);
+        setupDialog.close();
+      });
+
+      // Light dismiss dialogs when clicking backdrop
+      [rulesDialog, setupDialog, victoryDialog].forEach(dialog => {
+        dialog.addEventListener('click', (e) => {
+          if (e.target === dialog) dialog.close();
+        });
+      });
+    });
+  </script>
+</body>
+</html>
